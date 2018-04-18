@@ -31,7 +31,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
     double std_x, std_y, std_theta; // Standard deviations for x, y, and theta
     std_x = std[0];
     std_y = std[1];
-    std_theta =  std[2];
+    std_theta = std[2];
     
     // Create normal (Gaussian) distribution for x, y and theta;
     normal_distribution<double> dist_x(x, std_x);
@@ -48,7 +48,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
         weights.push_back(1.0);
     }
     
-    
+    is_initialized = true;
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate) {
@@ -56,7 +56,33 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	// NOTE: When adding noise you may find std::normal_distribution and std::default_random_engine useful.
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
+    
+    // used for sensor noise
+    default_random_engine gen;
+    double std_x, std_y, std_theta; // Standard deviations for x, y, and theta
+    std_x = std_pos[0];
+    std_y = std_pos[1];
+    std_theta = std_pos[2];
 
+    
+    for(int i = 0; i < particles.size(); ++i){
+        Particle p = particles[i];
+        double velocity_by_yaw_rate = velocity / yaw_rate;
+        double x, y, theta;
+        x = p.x + velocity_by_yaw_rate  * (sin(p.theta + yaw_rate * delta_t) - sin(p.theta));
+        y = p.y + velocity_by_yaw_rate * (cos(p.theta) - cos(p.theta + yaw_rate * delta_t));
+        theta = p.theta + yaw_rate * delta_t;
+        
+        // account for sensor noise by adding Gaussian noise
+        normal_distribution<double> dist_x(x, std_x);
+        p.x = dist_x(gen);
+        
+        normal_distribution<double> dist_y(y, std_y);
+        p.y = dist_x(gen);
+        
+        normal_distribution<double> heading(theta, std_theta);
+        p.theta = heading(gen);
+    }
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
