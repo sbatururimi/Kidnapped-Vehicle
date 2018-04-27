@@ -82,6 +82,8 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
         
         normal_distribution<double> heading(theta, std_theta);
         p.theta = heading(gen);
+        
+        particles[i] = p;
     }
 }
 
@@ -90,7 +92,26 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	//   observed measurement to this particular landmark.
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
-
+    for (int i = 0; i < observations.size(); ++i) {
+        LandmarkObs obs = observations[i];
+        int index_association = 0;
+        LandmarkObs pred = predicted[index_association];
+        float min_dist = sqrt((pred.x - obs.x) * (pred.x - obs.x) + (pred.y - obs.y) * (pred.y - obs.y));
+        if (predicted.size() < 2) {
+            observations[i] = pred;
+            continue;
+        }
+        for (int j = 1; j < predicted; ++j) {
+            LandmarkObs pred = predicted[j];
+            float dist = sqrt((pred.x - obs.x) * (pred.x - obs.x) + (pred.y - obs.y) * (pred.y - obs.y));
+            if (dist < min_dist) {
+                min_dist = dist;
+                index_association = j;
+            }
+        }
+        
+        observations[i] = predicted[index_association];
+    }
 }
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
@@ -105,6 +126,37 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   and the following is a good resource for the actual equation to implement (look at equation 
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
+    for (int i = 0; i < particles.size(); ++i) {
+        Particle p = particles[i];
+        vector<LandmarkObs> map_observations;
+        for(int j = 0; j < observations.size(); ++j){
+            LandmarkObs obs = observations[j];
+            
+            LandmarkObs map_obs;
+            map_obs.id = obs.id;
+            map_obs.x = p.x + (cos(p.theta) * obs.x) - (sin(p.theta) * obs.y);
+            map_obs.y = p.y + (sin(p.theta) * obs.x) + (cos(p.theta) * obs.y);
+            
+            map_observations.push_back(map_obs);
+        }
+        
+        // get the landmarks within the sensor range
+        vector<LandmarkObs> predicted;
+        for (int j = 0; j < map_landmarks.landmark_list.size(); ++j) {
+            Map::single_landmark_s landmark = map_landmarks.landmark_list[j];
+            if (landmark.x_f <= (p.x + sensor_range) && landmark.y_f <= (p.y + sensor_range)) {
+                LandmarkObs L;
+                L.id = landmark.id_i;
+                L.x = landmark.x_f;
+                L.y = landmark.y_f;
+                predicted.push_back(L);
+            }
+        }
+        
+        // associate each observation to the nearest landmark
+        dataAssociation(predicted, map_observations);
+    }
+    
 }
 
 void ParticleFilter::resample() {
