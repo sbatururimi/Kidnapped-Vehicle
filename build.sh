@@ -14,6 +14,10 @@ cd `dirname $0`
 
 # Compile code.
 mkdir -p build
+
+# copy the map txt file
+cp ./data/map_data.txt ./build
+
 cd build
 cmake ..
 make -j `nproc` $*
