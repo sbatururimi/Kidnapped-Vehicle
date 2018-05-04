@@ -111,7 +111,7 @@ The inputs to the particle filter are in the `data` directory.
 
 
 ## License
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sbatururimi/Kidnapped-Vehicle/blob/master/LICENSE.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sbatururimi/Kidnapped-Vehicle/blob/master/LICENSE)
 
 
 
